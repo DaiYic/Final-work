@@ -1,34 +1,44 @@
-version: '3'
 
-services:
-  web:
-    image: your_username/your_repository
-    ports:
-      - "8080:80"  # 将宿主机的8080端口映射到容器的80端口
-    depends_on:
-      - db
-    networks:
-      - app-network
+name: Deploy to Server
 
-  db:
-    image: mysql:5.7
-    environment:
-      MYSQL_ROOT_PASSWORD: example
-    networks:
-      - app-network
+on:
+  push:
+    branches:
+      - main
 
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    ports:
-      - "8181:80"  # 将宿主机的8181端口映射到phpMyAdmin容器的80端口
-    environment:
-      PMA_HOST: db
-      MYSQL_ROOT_PASSWORD: example
-    depends_on:
-      - db
-    networks:
-      - app-network
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-networks:
-  app-network:
-    driver: bridge
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Debug Docker Login
+      env:
+        DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+        DOCKER_USERNAME: your_docker_username
+        DOCKER_REGISTRY: docker.io
+      run: |
+        echo "Logging into Docker Hub..."
+        echo $DOCKER_TOKEN | docker login $DOCKER_REGISTRY -u $DOCKER_USERNAME --password-stdin
+        docker info
+
+    - name: Build and Push Docker Image
+      env:
+        DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+        DOCKER_USERNAME: your_docker_username
+      run: |
+        docker build -t your_username/your_repository .
+        docker tag your_username/your_repository your_username/your_repository:latest
+        docker push your_username/your_repository
+
+    - name: SSH Deploy
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.SERVER_SSH_PORT }}
+        script: |
+          docker-compose -f docker-compose.yml up -d

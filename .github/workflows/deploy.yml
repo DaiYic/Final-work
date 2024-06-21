@@ -16,7 +16,7 @@ jobs:
       - name: Build and Push Docker Image
         env:
           DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
-          DOCKER_USERNAME: your_docker_username
+          DOCKER_USERNAME: your_username
           DOCKER_REGISTRY: docker.io  # 如果使用Docker Hub，registry为docker.io
         run: |
           echo $DOCKER_TOKEN | docker login $DOCKER_REGISTRY -u $DOCKER_USERNAME --password-stdin
